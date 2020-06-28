@@ -1,5 +1,6 @@
 package com.tangjianghua.zookeeper.register;
 
+import com.tangjianghua.zookeeper.ConnectionFactory;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,30 +44,12 @@ public class ConfigurationCenter {
      * 初始化 建立连接
      */
     private void init() {
-        ZooKeeper zooKeeper = null;
-        try {
-            //创建连接，等待连接建立完成后在继续
-            CountDownLatch countDownLatch = new CountDownLatch(1);
-            //在Watch中监听连接状态，当状态建立完成后countDownLatch.countDown()
-            ConnectionWatch connectionWatch = new ConnectionWatch();
-            connectionWatch.setCountDownLatch(countDownLatch);
-            zooKeeper = new ZooKeeper(url, timeout, connectionWatch);
-            //连接建立完成前阻塞当前线程
-            countDownLatch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        //监控配置变动
-        watch = new WatchCallBack();
+        //创建连接
+        ZooKeeper zooKeeper = ConnectionFactory.createConnection(url, timeout);
         //放配置数据的地方
         myConf = new MyConf();
-        watch.setMyConf(myConf);
-        //监控的连接
-        watch.setZooKeeper(zooKeeper);
-        //监控的路径
-        watch.setWatchPath(watchPath);
+        //监控配置变动
+        watch = new WatchCallBack(myConf, zooKeeper, watchPath);
     }
 
 
@@ -75,7 +58,7 @@ public class ConfigurationCenter {
      */
     public void listen() {
         //监听并阻塞
-        try{
+        try {
             watch.aWait();
             while (true) {
                 if (myConf.getValue() != null && !myConf.getValue().isEmpty()) {
@@ -90,7 +73,7 @@ public class ConfigurationCenter {
                     e.printStackTrace();
                 }
             }
-        }finally {
+        } finally {
             try {
                 watch.getZooKeeper().close();
             } catch (InterruptedException e) {
