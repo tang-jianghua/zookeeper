@@ -89,7 +89,7 @@ public class WatchCallBack implements Watcher, AsyncCallback.StatCallback, Async
      */
     @Override
     public void process(WatchedEvent event) {
-        logger.debug(event.toString());
+        logger.debug("wathch回调----" + event.toString());
         switch (event.getType()) {
             case None:
                 break;
@@ -99,8 +99,14 @@ public class WatchCallBack implements Watcher, AsyncCallback.StatCallback, Async
                 break;
             case NodeDeleted:
                 logger.debug("节点被删除，清空数据，重新监听并阻塞");
-                myConf.setValue(null);
-                reAWait();
+                //当前阻塞并未放行，重新监听即可
+                if (countDownLatch.getCount() != 0) {
+                    //监听路径，从watch和callback异步响应
+                    zooKeeper.exists(watchPath, this, this, "existCtx");
+                } else {
+                    //阻塞已放行，重新阻塞
+                    myConf.setValue(null);
+                }
                 break;
             case NodeDataChanged:
                 logger.debug("节点数据修改，重新获取数据");
@@ -124,7 +130,7 @@ public class WatchCallBack implements Watcher, AsyncCallback.StatCallback, Async
      */
     @Override
     public void processResult(int rc, String path, Object ctx, Stat stat) {
-        logger.debug("接收到监听回调,rc--" + rc + ",ctx--" + ctx + ",path--" + path);
+        logger.debug("exit回调------rc--" + rc + ",ctx--" + ctx + ",path--" + path);
         if (stat != null && stat.getDataLength() > 0) {
             //存在路径，存储路径的值
             logger.debug("stat不为空，开始获取数据");
@@ -144,7 +150,7 @@ public class WatchCallBack implements Watcher, AsyncCallback.StatCallback, Async
      */
     @Override
     public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
-        logger.debug("DataCallBack,rc--" + rc + ",ctx--" + ctx + ",path--" + path);
+        logger.debug("getData回调-----DataCallBack,rc--" + rc + ",ctx--" + ctx + ",path--" + path);
         if (data != null) {
             logger.debug("reciveDataCallBack,data: " + new String(data));
             myConf.setValue(new String(data));

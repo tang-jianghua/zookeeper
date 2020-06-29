@@ -5,8 +5,6 @@ import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,8 +24,8 @@ public class ConfigurationCenter {
     private int timeout;
 
     WatchCallBack watch;
-
-    MyConf myConf;
+    //放配置数据的地方
+    final MyConf myConf = new MyConf();
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -46,8 +44,7 @@ public class ConfigurationCenter {
     private void init() {
         //创建连接
         ZooKeeper zooKeeper = ConnectionFactory.createConnection(url, timeout);
-        //放配置数据的地方
-        myConf = new MyConf();
+
         //监控配置变动
         watch = new WatchCallBack(myConf, zooKeeper, watchPath);
     }
@@ -65,7 +62,7 @@ public class ConfigurationCenter {
                     logger.warn(watchPath + " current value: " + myConf.getValue());
                 } else {
                     logger.warn("暂无配置");
-                    watch.aWait();
+                    watch.reAWait();
                 }
                 try {
                     TimeUnit.SECONDS.sleep(1L);

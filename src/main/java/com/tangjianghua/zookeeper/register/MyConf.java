@@ -6,13 +6,13 @@ package com.tangjianghua.zookeeper.register;
  */
 public class MyConf {
 
-    private String value;
+    private volatile String value;
 
     public String getValue() {
         return value;
     }
 
-    public void setValue(String value) {
+    public synchronized void setValue(String value) {
         this.value = value;
     }
 }
